@@ -1,0 +1,26 @@
+{
+  "name": "preact-test",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bpmn-io/form-js": "^1.15.1",
+    "cropperjs": "^2.0.0",
+    "diagram-js": "^15.2.4",
+    "pdf-lib": "^1.17.1",
+    "preact": "^10.26.5",
+    "react-easy-crop": "^5.4.1",
+    "react-image-crop": "^11.0.10"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.1",
+    "@types/react-easy-crop": "^1.16.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

@@ -1,0 +1,42 @@
+// App.tsx
+import { useEffect, useRef } from "react";
+import { Form } from "@bpmn-io/form-js";
+import "@bpmn-io/form-js/dist/assets/form-js.css";
+
+import scannerFieldModule from "../bpmn-html/index";
+const schema = {
+  type: "default",
+  components: [
+    {
+      type: "scanner", // your custom field type
+      key: "scannedDocument",
+      label: "Scan and Upload Document",
+    },
+  ],
+};
+
+function FormEmulator() {
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const form = new Form({
+      container: formRef.current!,
+      additionalModules: [scannerFieldModule],
+    });
+
+    form.importSchema(schema).catch((err) => {
+      console.error("Failed to load schema", err);
+    });
+
+    return () => form?.destroy();
+  }, []);
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Scanner Field Preview</h1>
+      <div ref={formRef} />
+    </div>
+  );
+}
+
+export default FormEmulator;

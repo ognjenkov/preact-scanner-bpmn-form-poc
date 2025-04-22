@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@bpmn-io/form-js": "^1.15.1",
+    "canvas": "^3.1.0",
     "cropperjs": "^2.0.0",
     "diagram-js": "^15.2.4",
+    "jscanify": "^1.4.0",
     "pdf-lib": "^1.17.1",
     "preact": "^10.26.5",
     "react-easy-crop": "^5.4.1",

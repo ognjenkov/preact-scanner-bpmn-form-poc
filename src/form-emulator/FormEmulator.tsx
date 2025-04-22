@@ -4,13 +4,22 @@ import { Form } from "@bpmn-io/form-js";
 import "@bpmn-io/form-js/dist/assets/form-js.css";
 
 import scannerFieldModule from "../bpmn-html/index";
+import scannerOpenCV1BPMNFieldModule from "../ScannerOpenCV1/bpmn-html/index";
+
+import { scannerType } from "../bpmn-html/Scanner";
+import { scannerOpenCV1BPMNType } from "../ScannerOpenCV1/bpmn-html/ScannerOpenCV1BPMN";
 const schema = {
   type: "default",
   components: [
     {
-      type: "scanner", // your custom field type
+      type: scannerType, // your custom field type
       key: "scannedDocument",
       label: "Scan and Upload Document",
+    },
+    {
+      type: scannerOpenCV1BPMNType,
+      key: "scannedDocument2",
+      label: "Scanner OpenCV",
     },
   ],
 };
@@ -21,7 +30,7 @@ function FormEmulator() {
   useEffect(() => {
     const form = new Form({
       container: formRef.current!,
-      additionalModules: [scannerFieldModule],
+      additionalModules: [scannerFieldModule, scannerOpenCV1BPMNFieldModule],
     });
 
     form.importSchema(schema).catch((err) => {

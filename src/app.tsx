@@ -1,9 +1,6 @@
 import { useState } from "preact/hooks";
-import preactLogo from "./assets/preact.svg";
-import viteLogo from "/vite.svg";
 import "./app.css";
-import Scanner from "./not-working/Scanner";
-import ScannerNEWNEW from "./preact/ScannerPReactLibraries";
+import ScannerOpenCV1Component from "./ScannerOpenCV1/ScannerOpenCV1Component";
 import FormEmulator from "./form-emulator/FormEmulator";
 
 export function App() {
@@ -15,6 +12,9 @@ export function App() {
       {/* <Scanner /> */}
       {/* <ScannerNEWNEW /> */}
       <FormEmulator />
+      {/* <ScannerOpenCV1Component /> */}
+      {/* <DocumentScanner /> */}
+      {/* <DocumentScanner /> */}
     </>
   );
 }

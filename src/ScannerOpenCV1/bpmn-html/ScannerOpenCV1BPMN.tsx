@@ -198,21 +198,41 @@ export function ScannerOpenCV1BPMN(props: any) {
       style="display: flex; flex-direction: column; gap: 1rem; font-family: sans-serif;"
     >
       <label style="font-weight: 600; color: #f9f9f9;">${label}</label>
+
+      <button
+        type="button"
+        onClick=${(e: any) => {
+          e.preventDefault();
+          e.stopPropagation();
+          inputRef.current?.click();
+        }}
+        disabled=${loading}
+        style="
+        padding: 0.5rem 1rem;
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      "
+      >
+        Use Scanner
+      </button>
+
       <input
         type="file"
         accept="image/*"
         capture="environment"
         ref=${inputRef}
-        onChange=${handleImageUpload}
+        onChange=${(e: any) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleImageUpload(e);
+        }}
         disabled=${loading}
-        style="
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 0.375rem;
-        background: #f9f9f9;
-        cursor: pointer;
-      "
+        style="display: none;"
       />
+
       ${loading &&
       html`<p style="color: #888; font-size: 0.9rem;">Processing image...</p>`}
       <${Description} description=${description} />

@@ -7,6 +7,9 @@ import { waitForOpenCV } from "../waitForOpenCV";
 export const scannerOpenCV1BPMNType = "scanner-opencv";
 
 export function ScannerOpenCV1BPMN(props: any) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pdfDataUrl, setPdfDataUrl] = useState<Uint8Array | null>(null);
+
   const { disabled, errors = [], field, readonly } = props;
   const { description, id, label, validate = {} } = field;
   const { required } = validate;
@@ -164,20 +167,22 @@ export function ScannerOpenCV1BPMN(props: any) {
         outputCanvas.height = warped.rows;
         cv.imshow(outputCanvas, warped);
 
-        const blob = await new Promise<Blob>((resolve) =>
+        // ovde izmena
+
+        const previewUrlBlob = await new Promise<Blob>((resolve) =>
           outputCanvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
         );
+        const previewUrl = URL.createObjectURL(previewUrlBlob);
+        setPreviewUrl(previewUrl);
 
-        const imageBytes = new Uint8Array(await blob.arrayBuffer());
-
+        // Also prepare the PDF, but wait to trigger download until "Done"
+        const imageBytes = new Uint8Array(await previewUrlBlob.arrayBuffer());
         const pdfDoc = await PDFDocument.create();
         const imgEmbed = await pdfDoc.embedJpg(imageBytes);
 
         const A4_WIDTH = 595.28;
         const A4_HEIGHT = 841.89;
-
         const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
-
         page.drawImage(imgEmbed, {
           x: 0,
           y: 0,
@@ -186,11 +191,7 @@ export function ScannerOpenCV1BPMN(props: any) {
         });
 
         const pdfBytes = await pdfDoc.save();
-        const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(pdfBlob);
-        link.download = `${Math.random() * 1000}.pdf`;
-        link.click();
+        setPdfDataUrl(pdfBytes);
 
         [src, gray, thresh, contours, hierarchy, approx, warped].forEach((m) =>
           m.delete()
@@ -243,6 +244,120 @@ export function ScannerOpenCV1BPMN(props: any) {
         style="display: none;"
       />
 
+      ${previewUrl &&
+      html`
+        <div
+          style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  "
+        >
+          <div
+            style="
+    position: relative;
+    max-width: 90vw;
+    max-height: 80vh;
+    aspect-ratio: 1 / 1.4142; /* A4 format */
+    background: white;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  "
+          >
+            <img
+              src="${previewUrl}"
+              style="width: 100%; height: 100%; object-fit: fill;"
+            />
+          </div>
+
+          <div
+            style="
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    "
+          >
+            <button
+              type="button"
+              style="
+                  background: #ccc;
+                  color: #000;
+                  padding: 0.75rem 1.5rem;
+                  border: none;
+                  border-radius: 8px;
+                  font-weight: bold;
+                "
+              onClick=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPreviewUrl(null);
+                setPdfDataUrl(null);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              style="
+                  background: orange;
+                  color: white;
+                  padding: 0.75rem 1.5rem;
+                  border: none;
+                  border-radius: 8px;
+                  font-weight: bold;
+                "
+              onClick=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPreviewUrl(null);
+                setPdfDataUrl(null);
+                inputRef.current?.click();
+              }}
+            >
+              Retake
+            </button>
+            <button
+              type="button"
+              style="
+                  background: green;
+                  color: white;
+                  padding: 0.75rem 1.5rem;
+                  border: none;
+                  border-radius: 8px;
+                  font-weight: bold;
+                "
+              onClick=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!pdfDataUrl) return;
+                const pdfBlob = new Blob([pdfDataUrl], {
+                  type: "application/pdf",
+                });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = `${Math.random() * 1000}.pdf`;
+                link.click();
+                setPreviewUrl(null);
+                setPdfDataUrl(null);
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      `}
       ${loading &&
       html`<p style="color: #888; font-size: 0.9rem;">Processing image...</p>`}
       <${Description} description=${description} />

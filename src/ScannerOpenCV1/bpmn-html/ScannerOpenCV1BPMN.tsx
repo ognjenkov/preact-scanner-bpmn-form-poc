@@ -7,8 +7,9 @@ import { waitForOpenCV } from "../waitForOpenCV";
 export const scannerOpenCV1BPMNType = "scanner-opencv";
 
 export function ScannerOpenCV1BPMN(props: any) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pdfDataUrl, setPdfDataUrl] = useState<Uint8Array | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [pdfs, setPdfs] = useState<Uint8Array[]>([]);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const { disabled, errors = [], field, readonly } = props;
   const { description, id, label, validate = {} } = field;
@@ -173,7 +174,8 @@ export function ScannerOpenCV1BPMN(props: any) {
           outputCanvas.toBlob((b) => resolve(b!), "image/jpeg", 0.95)
         );
         const previewUrl = URL.createObjectURL(previewUrlBlob);
-        setPreviewUrl(previewUrl);
+        // setPreviewUrl(previewUrl);
+        setPreviews((prev) => [...prev, previewUrl]);
 
         // Also prepare the PDF, but wait to trigger download until "Done"
         const imageBytes = new Uint8Array(await previewUrlBlob.arrayBuffer());
@@ -191,11 +193,19 @@ export function ScannerOpenCV1BPMN(props: any) {
         });
 
         const pdfBytes = await pdfDoc.save();
-        setPdfDataUrl(pdfBytes);
+        // setPdfDataUrl(pdfBytes);
+        setPdfs((prev) => [...prev, pdfBytes]);
 
         [src, gray, thresh, contours, hierarchy, approx, warped].forEach((m) =>
           m.delete()
         );
+
+        setTimeout(() => {
+          galleryRef.current?.scrollTo({
+            top: galleryRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }, 100);
       } catch (err) {
         console.error("OpenCV processing error:", err);
       } finally {
@@ -244,7 +254,8 @@ export function ScannerOpenCV1BPMN(props: any) {
         style="display: none;"
       />
 
-      ${previewUrl &&
+      ${previews &&
+      previews.length > 0 &&
       html`
         <div
           style="
@@ -262,23 +273,21 @@ export function ScannerOpenCV1BPMN(props: any) {
   "
         >
           <div
-            style="
-    position: relative;
-    max-width: 90vw;
-    max-height: 80vh;
-    aspect-ratio: 1 / 1.4142; /* A4 format */
-    background: white;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  "
+            ref=${galleryRef}
+            style="max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;"
           >
-            <img
-              src="${previewUrl}"
-              style="width: 100%; height: 100%; object-fit: fill;"
-            />
+            ${previews.map(
+              (url) => html`
+                <div
+                  style="width: 90vw; aspect-ratio: 1 / 1.4142; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;"
+                >
+                  <img
+                    src=${url}
+                    style="width: 100%; height: 100%; object-fit: fill;"
+                  />
+                </div>
+              `
+            )}
           </div>
 
           <div
@@ -302,8 +311,8 @@ export function ScannerOpenCV1BPMN(props: any) {
               onClick=${(e: Event) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setPreviewUrl(null);
-                setPdfDataUrl(null);
+                setPreviews([]);
+                setPdfs([]);
               }}
             >
               Cancel
@@ -321,12 +330,23 @@ export function ScannerOpenCV1BPMN(props: any) {
               onClick=${(e: Event) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setPreviewUrl(null);
-                setPdfDataUrl(null);
+                setPreviews((prev) => prev.slice(0, -1));
+                setPdfs((prev) => prev.slice(0, -1));
                 inputRef.current?.click();
               }}
             >
               Retake
+            </button>
+            <button
+              type="button"
+              onClick=${(e: any) => {
+                e.preventDefault();
+                e.stopPropagation();
+                inputRef.current?.click();
+              }}
+              style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 0.375rem;"
+            >
+              Add Document
             </button>
             <button
               type="button"
@@ -338,19 +358,28 @@ export function ScannerOpenCV1BPMN(props: any) {
                   border-radius: 8px;
                   font-weight: bold;
                 "
-              onClick=${(e: Event) => {
+              onClick=${async (e: Event) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!pdfDataUrl) return;
-                const pdfBlob = new Blob([pdfDataUrl], {
-                  type: "application/pdf",
-                });
+
+                const mergedPdf = await PDFDocument.create();
+                for (const pdfBytes of pdfs) {
+                  const pdf = await PDFDocument.load(pdfBytes);
+                  const pages = await mergedPdf.copyPages(
+                    pdf,
+                    pdf.getPageIndices()
+                  );
+                  pages.forEach((p) => mergedPdf.addPage(p));
+                }
+                const finalPdf = await mergedPdf.save();
+                const blob = new Blob([finalPdf], { type: "application/pdf" });
                 const link = document.createElement("a");
-                link.href = URL.createObjectURL(pdfBlob);
-                link.download = `${Math.random() * 1000}.pdf`;
+                link.href = URL.createObjectURL(blob);
+                link.download = "scanned_document.pdf";
                 link.click();
-                setPreviewUrl(null);
-                setPdfDataUrl(null);
+
+                setPreviews([]);
+                setPdfs([]);
               }}
             >
               Done

@@ -20,27 +20,37 @@ export function ScannerOpenCV1BPMN(props: any) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://docs.opencv.org/4.x/opencv.js";
-    script.async = true;
-    script.type = "text/javascript";
-    document.body.appendChild(script);
+    // Prevent duplicate script
+    const scriptUrl = "https://docs.opencv.org/4.x/opencv.js";
+    let script: HTMLScriptElement | null = document.querySelector(
+      `script[src="${scriptUrl}"]`
+    );
 
     const load = async () => {
       const cvInstance = await waitForOpenCV();
       setCv(cvInstance);
       console.log("OpenCV Loaded:", cvInstance.getBuildInformation());
     };
-    setTimeout(load, 1000);
-    // load();
+
+    // If the script doesn't exist, create and append it
+    if (!script) {
+      script = document.createElement("script");
+      script.src = scriptUrl;
+      script.async = true;
+      script.type = "text/javascript";
+      script.onload = load; // Call load() after script finishes loading
+      document.body.appendChild(script);
+    } else if (window.cv) {
+      // If script already loaded, and cv is ready
+      load();
+    }
 
     return () => {
-      // Clean up script on unmount
-      document.body.removeChild(script);
-      // Optionally remove global `cv` reference
-      // @ts-ignore
+      // Optional cleanup
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
       if (window.cv) {
-        // @ts-ignore
         delete window.cv;
       }
     };
